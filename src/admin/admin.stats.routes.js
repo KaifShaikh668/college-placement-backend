@@ -7,16 +7,27 @@ const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 router.get("/stats", protect, adminOnly, async (req, res) => {
   try {
-    const totalStudents = await Student.countDocuments();
-    const openDrives = await Job.countDocuments({ status: "Open" });
-    const totalApplications = await Application.countDocuments();
+    const [
+      totalStudents,
+      totalJobs,
+      totalApplications,
+      selectedCount
+    ] = await Promise.all([
+      Student.countDocuments(),
+      Job.countDocuments(),
+      Application.countDocuments(),
+      Application.countDocuments({ status: "Selected" })
+    ]);
 
     res.json({
       totalStudents,
-      openDrives,
+      totalJobs,
       totalApplications,
+      selectedCount
     });
+
   } catch (error) {
+    console.error("Stats Error:", error);
     res.status(500).json({ message: "Failed to fetch stats" });
   }
 });
