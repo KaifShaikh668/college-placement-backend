@@ -19,7 +19,7 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       Application.countDocuments(),
       Application.countDocuments({ status: "Selected" }),
 
-      // ✅ Monthly student registration aggregation
+      // 🔥 Monthly student registrations
       Student.aggregate([
         {
           $group: {
@@ -27,19 +27,18 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
             students: { $sum: 1 }
           }
         },
-        { $sort: { "_id": 1 } }
+        { $sort: { _id: 1 } }
       ])
     ]);
 
-    // Convert month number to month name
+    // Convert month numbers to names
     const monthNames = [
-      "", "Jan", "Feb", "Mar", "Apr",
-      "May", "Jun", "Jul", "Aug",
-      "Sep", "Oct", "Nov", "Dec"
+      "Jan","Feb","Mar","Apr","May","Jun",
+      "Jul","Aug","Sep","Oct","Nov","Dec"
     ];
 
-    const formattedMonthlyData = monthlyData.map(item => ({
-      name: monthNames[item._id],
+    const monthlyRegistrations = monthlyData.map(item => ({
+      name: monthNames[item._id - 1],
       students: item.students
     }));
 
@@ -48,7 +47,7 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       totalJobs,
       totalApplications,
       selectedCount,
-      monthlyData: formattedMonthlyData
+      monthlyRegistrations
     });
 
   } catch (error) {
