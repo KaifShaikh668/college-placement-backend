@@ -6,6 +6,7 @@ const Application = require("../applications/application.model");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 router.get("/stats", protect, adminOnly, async (req, res) => {
+  console.log("🔥 Monthly aggregation running");
   try {
     const [
       totalStudents,
