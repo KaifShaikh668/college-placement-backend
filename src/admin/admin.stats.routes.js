@@ -7,6 +7,7 @@ const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 router.get("/stats", protect, adminOnly, async (req, res) => {
   console.log("🔥 Monthly aggregation running");
+
   try {
     const [
       totalStudents,
@@ -22,29 +23,30 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
 
       // ✅ Full historical monthly registrations (Year + Month)
       Student.aggregate([
-  {
-    $match: {
-      createdAt: { $type: "date" }  // only valid Date fields
-    }
-  },
-  {
-    $group: {
-      _id: {
-        year: { $year: "$createdAt" },
-        month: { $month: "$createdAt" }
-      },
-      students: { $sum: 1 }
-    }
-  },
-  {
-    $sort: {
-      "_id.year": 1,
-      "_id.month": 1
-    }
-  }
-])
-]);
-const monthNames = [
+        {
+          $match: {
+            createdAt: { $type: "date" } // only valid Date fields
+          }
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" }
+            },
+            students: { $sum: 1 }
+          }
+        },
+        {
+          $sort: {
+            "_id.year": 1,
+            "_id.month": 1
+          }
+        }
+      ])
+    ]);
+
+    const monthNames = [
       "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ];
