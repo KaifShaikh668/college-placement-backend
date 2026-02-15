@@ -21,11 +21,10 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       Application.countDocuments(),
       Application.countDocuments({ status: "Selected" }),
 
-      // ✅ Full historical monthly registrations (Year + Month)
       Student.aggregate([
         {
           $match: {
-            createdAt: { $type: "date" } // only valid Date fields
+            createdAt: { $type: "date" }
           }
         },
         {
@@ -51,10 +50,22 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ];
 
-    const monthlyRegistrations = monthlyData.map(item => ({
-      name: `${monthNames[item._id.month]} ${item._id.year}`,
-      students: item.students
-    }));
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+
+    const monthlyRegistrations = monthlyData
+      .filter(item => {
+        return !(
+          item._id.year === currentYear &&
+          item._id.month === currentMonth &&
+          item.students === 0
+        );
+      })
+      .map(item => ({
+        name: `${monthNames[item._id.month]} ${item._id.year}`,
+        students: item.students
+      }));
 
     res.json({
       totalStudents,
