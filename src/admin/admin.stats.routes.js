@@ -14,8 +14,7 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       totalJobs,
       totalApplications,
       selectedCount,
-      monthlyData,
-      recentStudents
+      monthlyData
     ] = await Promise.all([
       Student.countDocuments(),
       Job.countDocuments(),
@@ -44,13 +43,7 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
             "_id.month": 1
           }
         }
-      ]),
-
-      // Last 5 registered students
-      Student.find({})
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select("name department createdAt")
+      ])
     ]);
 
     const monthNames = [
@@ -87,8 +80,7 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       totalApplications,
       selectedCount,
       selectionRate,
-      monthlyRegistrations,
-      recentStudents
+      monthlyRegistrations
     });
 
   } catch (error) {
