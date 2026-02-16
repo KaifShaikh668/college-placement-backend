@@ -6,7 +6,7 @@ const Application = require("../applications/application.model");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 router.get("/stats", protect, adminOnly, async (req, res) => {
-  console.log("🔥 Monthly aggregation running");
+  console.log("🔥 Admin stats route running");
 
   try {
     const [
@@ -14,13 +14,15 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       totalJobs,
       totalApplications,
       selectedCount,
-      monthlyData
+      monthlyData,
+      recentStudents
     ] = await Promise.all([
       Student.countDocuments(),
       Job.countDocuments(),
       Application.countDocuments(),
       Application.countDocuments({ status: "Selected" }),
 
+      // Monthly aggregation
       Student.aggregate([
         {
           $match: {
@@ -42,7 +44,13 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
             "_id.month": 1
           }
         }
-      ])
+      ]),
+
+      // Last 5 registered students
+      Student.find({})
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("name department createdAt")
     ]);
 
     const monthNames = [
@@ -67,12 +75,20 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
         students: item.students
       }));
 
+    // Calculate selection rate safely
+    const selectionRate =
+      totalApplications > 0
+        ? ((selectedCount / totalApplications) * 100).toFixed(1)
+        : 0;
+
     res.json({
       totalStudents,
       totalJobs,
       totalApplications,
       selectedCount,
-      monthlyRegistrations
+      selectionRate,
+      monthlyRegistrations,
+      recentStudents
     });
 
   } catch (error) {
