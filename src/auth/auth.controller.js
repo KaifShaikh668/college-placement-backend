@@ -68,11 +68,15 @@ exports.register = async (req, res) => {
       });
     }
 
-    // ✅ if this student already has an email in DB, it must match
-    if (student.email && student.email.length > 0 && student.email !== normalizedEmail) {
-      return res.status(400).json({
-        message: "Email does not match Student ID. Contact Admin.",
-      });
+    // ✅ FIXED: case-insensitive + trimmed email comparison
+    if (student.email) {
+      const dbEmail = String(student.email).toLowerCase().trim();
+
+      if (dbEmail !== normalizedEmail) {
+        return res.status(400).json({
+          message: "Email does not match Student ID. Contact Admin.",
+        });
+      }
     }
 
     // ✅ prevent other students from using same email
