@@ -14,61 +14,75 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       totalJobs,
       totalApplications,
       selectedCount,
-      monthlyData
+      departmentPerformance
     ] = await Promise.all([
+
       Student.countDocuments(),
       Job.countDocuments(),
       Application.countDocuments(),
       Application.countDocuments({ status: "Selected" }),
 
-      // Monthly aggregation
+      // 🔥 Department Wise Placement Performance
       Student.aggregate([
         {
-          $match: {
-            createdAt: { $type: "date" }
+          $lookup: {
+            from: "applications",
+            localField: "_id",
+            foreignField: "student",
+            as: "applications"
+          }
+        },
+        {
+          $addFields: {
+            department: {
+              $ifNull: ["$department", "Unassigned"]
+            }
           }
         },
         {
           $group: {
-            _id: {
-              year: { $year: "$createdAt" },
-              month: { $month: "$createdAt" }
-            },
-            students: { $sum: 1 }
+            _id: "$department",
+            totalStudents: { $sum: 1 },
+            totalApplications: { $sum: { $size: "$applications" } },
+            selectedCount: {
+              $sum: {
+                $size: {
+                  $filter: {
+                    input: "$applications",
+                    as: "app",
+                    cond: { $eq: ["$$app.status", "Selected"] }
+                  }
+                }
+              }
+            }
           }
         },
         {
-          $sort: {
-            "_id.year": 1,
-            "_id.month": 1
+          $addFields: {
+            selectionRate: {
+              $cond: [
+                { $gt: ["$totalApplications", 0] },
+                {
+                  $round: [
+                    {
+                      $multiply: [
+                        { $divide: ["$selectedCount", "$totalApplications"] },
+                        100
+                      ]
+                    },
+                    1
+                  ]
+                },
+                0
+              ]
+            }
           }
-        }
+        },
+        { $sort: { totalStudents: -1 } }
       ])
     ]);
 
-    const monthNames = [
-      "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ];
-
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1;
-
-    const monthlyRegistrations = monthlyData
-      .filter(item => {
-        return !(
-          item._id.year === currentYear &&
-          item._id.month === currentMonth &&
-          item.students === 0
-        );
-      })
-      .map(item => ({
-        name: `${monthNames[item._id.month]} ${item._id.year}`,
-        students: item.students
-      }));
-
-    // Calculate selection rate safely
+    // Overall selection rate
     const selectionRate =
       totalApplications > 0
         ? ((selectedCount / totalApplications) * 100).toFixed(1)
@@ -80,7 +94,7 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       totalApplications,
       selectedCount,
       selectionRate,
-      monthlyRegistrations
+      departmentPerformance
     });
 
   } catch (error) {
