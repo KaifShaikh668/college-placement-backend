@@ -14,75 +14,21 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       totalJobs,
       totalApplications,
       selectedCount,
-      departmentPerformance
+      recentActivity
     ] = await Promise.all([
-
       Student.countDocuments(),
       Job.countDocuments(),
       Application.countDocuments(),
       Application.countDocuments({ status: "Selected" }),
 
-      // 🔥 Department Wise Placement Performance
-      Student.aggregate([
-        {
-          $lookup: {
-            from: "applications",
-            localField: "_id",
-            foreignField: "student",
-            as: "applications"
-          }
-        },
-        {
-          $addFields: {
-            department: {
-              $ifNull: ["$department", "Unassigned"]
-            }
-          }
-        },
-        {
-          $group: {
-            _id: "$department",
-            totalStudents: { $sum: 1 },
-            totalApplications: { $sum: { $size: "$applications" } },
-            selectedCount: {
-              $sum: {
-                $size: {
-                  $filter: {
-                    input: "$applications",
-                    as: "app",
-                    cond: { $eq: ["$$app.status", "Selected"] }
-                  }
-                }
-              }
-            }
-          }
-        },
-        {
-          $addFields: {
-            selectionRate: {
-              $cond: [
-                { $gt: ["$totalApplications", 0] },
-                {
-                  $round: [
-                    {
-                      $multiply: [
-                        { $divide: ["$selectedCount", "$totalApplications"] },
-                        100
-                      ]
-                    },
-                    1
-                  ]
-                },
-                0
-              ]
-            }
-          }
-        },
-        { $sort: { totalStudents: -1 } }
-      ])
+      // 🔥 Recent Activity
+      Application.find({})
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate("student", "name department")
+        .populate("job", "company role")
     ]);
 
-    // Overall selection rate
     const selectionRate =
       totalApplications > 0
         ? ((selectedCount / totalApplications) * 100).toFixed(1)
@@ -94,7 +40,7 @@ router.get("/stats", protect, adminOnly, async (req, res) => {
       totalApplications,
       selectedCount,
       selectionRate,
-      departmentPerformance
+      recentActivity
     });
 
   } catch (error) {
