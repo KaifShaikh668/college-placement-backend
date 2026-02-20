@@ -8,6 +8,7 @@ const jobRoutes = require("./jobs/job.routes");
 const applicationRoutes = require("./applications/application.routes");
 const studentRoutes = require("./student/student.routes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const adminUploadRoutes = require("./admin/admin.upload.routes");
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use("/api/jobs", jobRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin", adminUploadRoutes);
 
 // health check
 app.get("/", (req, res) => {
